@@ -103,9 +103,26 @@ class Users:
             return jsonify(u)
         else:
             raise customError("No users found")
-      
+        
     @staticmethod
-    def isAdmin():
-        user = users.find_one({"_id":session['uid']})
-        return user['isAdmin']   
-
+    def edituser(username,mail):
+        user=users.find_one({'_id':session["uid"]})
+        if user:
+            if(username!=None and mail != None):
+                result=users.update_one(
+                    {
+                        "_id": session['uid']                        
+                    },
+                    {
+                        "$set": {
+                        "username": username,
+                        "mail":mail                        
+                        }
+                    }
+                )
+                if result.modified_count > 0:
+                    return True
+            else:
+                raise customError("username or mail is invalid.")
+        else:
+            raise customError("user not found")

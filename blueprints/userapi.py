@@ -11,7 +11,6 @@ users=db.users
 
 @bp.route('/',methods=['POST','GET'])
 @jwt_required()
-@Roles.Roles.roles_required(['customer'])
 def test():
     current_user = get_jwt_identity()
     return{
@@ -87,16 +86,9 @@ def revoke_roles():
                'message': 'ilefhblelekd'}, 200
            
         
-        
-      
-            
       
 
    
-
-
-
-
 @bp.route('/signup',methods=['POST','GET'])
 def signup():
     if(request.method =='GET'):
@@ -108,7 +100,6 @@ def signup():
             password = request.form['password']
             email = request.form['email']
             try:
-                #TODO: get the confirm password from the user
                 result= Users.register(username,password,email)
                 return {'result':True,'message':'signup success'},200
             except customError as e:
@@ -125,11 +116,6 @@ def login():
         return {
             'message':'Method not found , use POST method'
         },405
-    
-    # current_user = get_jwt_identity()
-    # if current_user :
-    #     return jsonify({'result':False,
-    #                     'message': 'Already authenticated'}), 202
 
     if('username' in request.form and 'password' in request.form):
         username = request.form['username']
@@ -156,14 +142,44 @@ def login():
         return {
             'message':'Not enough parameters'
         },400
+        
+        
+@bp.route('/users/edit',methods=['POST','GET'])
+@jwt_required()
+def edituser():
+    if(request.method == 'GET'):
+        return {
+            'message':'Method not found , use POST method'
+        },405
 
-revoked_tokens = set()
+    if('username' in request.form and 'mail' in request.form):
+        username = request.form['username']
+        mail = request.form['mail']
+        try:
+            user = Users.edituser(username,mail)
+            if user:
+                return {'result':True,
+                'message':'user profile edited successfully',
+                 }, 200
+            else:
+                return {'message': 'Invalid username or password'}, 401
+        except customError as e:
+            return{
+                'Exception':str(e)
+            },400
+    else:
+        return {
+            'message':'Not enough parameters'
+        },400
+
+logged_out_users = set()
 @bp.route('/logout', methods=['POST','GET'])
 @jwt_required()
 def logout():
-    jti = get_jwt()['jti']
-    revoked_tokens.add(jti)
+    current_user = get_jwt_identity()
+    logged_out_users.add(current_user)
     return {'message': 'Successfully logged out'}, 200 
+
         
 
 @bp.route('/refresh')
@@ -199,7 +215,9 @@ def changepassword():
         return {
             'message':'Method not found , use POST method'
         },405
-    if session.get('islogged'):
+    current_user = get_jwt_identity()
+    
+    if current_user:
         try:
             if("old_password" in request.form and "new_password" in request.form):
                 old_pass=request.form["old_password"]
@@ -207,14 +225,14 @@ def changepassword():
                 Users.changePassword(old_pass,new_pass)
                 return {'result':True,
                     "message":"password updated successfully.",
-                    "result":True
+                   
                 },200
         except customError as e:
             return{
                 'Exception':str(e)
             },400
     else:
-        return {
+        return {"result":False,
             "message":"You are not authenticated"
         },401
 
